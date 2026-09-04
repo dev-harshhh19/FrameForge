@@ -13,7 +13,7 @@ FrameForge solves this by providing a truly reusable, multi-product engine. It d
 
 FrameForge uses a decoupled, multi-stage pipeline processing architecture.
 
-[👉 View the full Architecture Diagram and Tooling Details in `architecture.md`](architecture.md)
+[View the full Architecture Diagram and Tooling Details in `architecture.md`](architecture.md)
 
 ## 3. Scalability & Limit Handling (No Hard Caps)
 FrameForge does not impose artificial caps on video length, scene count, or generation frequency. It manages provider-side limits (e.g., rate limits, API quotas, maximum generation ceilings) using the following robust strategies:
