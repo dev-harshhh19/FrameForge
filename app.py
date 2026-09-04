@@ -71,6 +71,7 @@ def submit():
             "image_paths": image_paths,
             "notify_webhook": form.get("notify_webhook") or None,
             "notify_email": form.get("notify_email") or None,
+            "mode": form.get("mode") or "local",
         })
 
     job_id = job_queue.submit(product)
