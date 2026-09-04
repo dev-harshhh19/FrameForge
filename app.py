@@ -45,23 +45,30 @@ def submit():
             f.save(dest)
             image_paths.append(str(dest))
 
-    product = ProductInput.from_dict({
-        "name": form.get("name", "").strip(),
-        "description": form.get("description", "").strip(),
-        "features": form.get("features", ""),
-        "target_audience": form.get("target_audience", "").strip(),
-        "call_to_action": form.get("call_to_action") or "Learn more today.",
-        "brand_color": form.get("brand_color") or "#1D4ED8",
-        "tone": form.get("tone") or "energetic",
-        "voice": form.get("voice") or "slt",
-        "logo_path": logo_path,
-        "image_paths": image_paths,
-        "notify_webhook": form.get("notify_webhook") or None,
-        "notify_email": form.get("notify_email") or None,
-    })
+    if form.get("raw_json") and form.get("raw_json").strip():
+        try:
+            data = json.loads(form.get("raw_json"))
+            product = ProductInput.from_dict(data)
+        except json.JSONDecodeError:
+            return render_template("index.html", error="Invalid JSON format."), 400
+    else:
+        product = ProductInput.from_dict({
+            "name": form.get("name", "").strip(),
+            "description": form.get("description", "").strip(),
+            "features": form.get("features", ""),
+            "target_audience": form.get("target_audience", "").strip(),
+            "call_to_action": form.get("call_to_action") or "Learn more today.",
+            "brand_color": form.get("brand_color") or "#1D4ED8",
+            "tone": form.get("tone") or "energetic",
+            "voice": form.get("voice") or "slt",
+            "logo_path": logo_path,
+            "image_paths": image_paths,
+            "notify_webhook": form.get("notify_webhook") or None,
+            "notify_email": form.get("notify_email") or None,
+        })
 
-    if not product.name or not product.description:
-        return render_template("index.html", error="Name and description are required."), 400
+        if not product.name or not product.description:
+            return render_template("index.html", error="Name and description are required."), 400
 
     job_id = job_queue.submit(product)
     return redirect(url_for("status_page", job_id=job_id))

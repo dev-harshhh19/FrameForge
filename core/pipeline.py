@@ -12,7 +12,7 @@ from typing import Optional
 
 from core.models import ProductInput
 from core.script_generator import TemplateScriptGenerator
-from core.tts_providers import TTSPipeline
+from core.tts_providers import TTSPipeline, CloudTTSProviderStub, FliteLocalTTSProvider
 from core.video_providers import VideoRenderPipeline
 from core.scene_renderer import render_scene_image
 from core.assembler import (

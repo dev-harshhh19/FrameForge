@@ -27,57 +27,83 @@
   <p class="sub">Fill this in, hit generate, get a video. No code required.</p>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
 
+  <script>
+    function toggleFormat() {
+      const mode = document.getElementById('format_selector').value;
+      if (mode === 'json') {
+        document.getElementById('form_textual').style.display = 'none';
+        document.getElementById('form_json').style.display = 'block';
+      } else {
+        document.getElementById('form_textual').style.display = 'block';
+        document.getElementById('form_json').style.display = 'none';
+      }
+    }
+  </script>
+
+  <label>Input Format</label>
+  <select id="format_selector" onchange="toggleFormat()">
+    <option value="textual">Textual Format</option>
+    <option value="json">Raw JSON</option>
+  </select>
+
   <form action="/submit" method="post" enctype="multipart/form-data">
-    <label>Product / project name *</label>
-    <input type="text" name="name" required placeholder="e.g. Nimbus Notes">
-
-    <label>Description *</label>
-    <textarea name="description" required placeholder="One or two sentences about what it is and why it matters."></textarea>
-
-    <label>Key features (one per line, or comma-separated)</label>
-    <textarea name="features" placeholder="Real-time sync across every device&#10;Offline-first with automatic backup&#10;End-to-end encryption"></textarea>
-
-    <label>Target audience</label>
-    <input type="text" name="target_audience" placeholder="e.g. remote-first product teams">
-
-    <label>Call to action</label>
-    <input type="text" name="call_to_action" placeholder="e.g. Start your free trial today.">
-
-    <div class="row">
-      <div>
-        <label>Brand color</label>
-        <input type="color" name="brand_color" value="#2563EB">
-      </div>
-      <div>
-        <label>Tone</label>
-        <select name="tone">
-          <option value="energetic">Energetic</option>
-          <option value="professional">Professional</option>
-          <option value="calm">Calm</option>
-        </select>
-      </div>
-      <div>
-        <label>Voice</label>
-        <select name="voice">
-          <option value="slt">slt (US female)</option>
-          <option value="rms">rms (US male)</option>
-          <option value="awb">awb (Scottish male)</option>
-          <option value="kal">kal (US male, classic)</option>
-        </select>
-      </div>
+    <div id="form_json" style="display: none; margin-top: 16px;">
+      <label>Raw JSON</label>
+      <textarea name="raw_json" placeholder='{"name": "App", "description": "..."}' style="min-height: 200px; font-family: monospace;"></textarea>
     </div>
 
-    <label>Logo (optional)</label>
-    <input type="file" name="logo" accept="image/*">
+    <div id="form_textual">
+      <label>Product / project name *</label>
+      <input type="text" name="name" placeholder="e.g. Nimbus Notes">
 
-    <label>Product image(s) (optional)</label>
-    <input type="file" name="images" accept="image/*" multiple>
+      <label>Description *</label>
+      <textarea name="description" placeholder="One or two sentences about what it is and why it matters."></textarea>
 
-    <label>Notify - webhook URL (optional)</label>
-    <input type="url" name="notify_webhook" placeholder="https://hooks.example.com/...">
+      <label>Key features (one per line, or comma-separated)</label>
+      <textarea name="features" placeholder="Real-time sync across every device&#10;Offline-first with automatic backup&#10;End-to-end encryption"></textarea>
 
-    <label>Notify - email (optional, logged, not actually sent in this demo)</label>
-    <input type="email" name="notify_email" placeholder="you@company.com">
+      <label>Target audience</label>
+      <input type="text" name="target_audience" placeholder="e.g. remote-first product teams">
+
+      <label>Call to action</label>
+      <input type="text" name="call_to_action" placeholder="e.g. Start your free trial today.">
+
+      <div class="row">
+        <div>
+          <label>Brand color</label>
+          <input type="color" name="brand_color" value="#2563EB">
+        </div>
+        <div>
+          <label>Tone</label>
+          <select name="tone">
+            <option value="energetic">Energetic</option>
+            <option value="professional">Professional</option>
+            <option value="calm">Calm</option>
+          </select>
+        </div>
+        <div>
+          <label>Voice</label>
+          <select name="voice">
+            <option value="slt">slt (US female)</option>
+            <option value="rms">rms (US male)</option>
+            <option value="awb">awb (Scottish male)</option>
+            <option value="kal">kal (US male, classic)</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Logo (optional)</label>
+      <input type="file" name="logo" accept="image/*">
+
+      <label>Product image(s) (optional)</label>
+      <input type="file" name="images" accept="image/*" multiple>
+
+      <label>Notify - webhook URL (optional)</label>
+      <input type="url" name="notify_webhook" placeholder="https://hooks.example.com/...">
+
+      <label>Notify - email (optional, logged, not actually sent in this demo)</label>
+      <input type="email" name="notify_email" placeholder="you@company.com">
+    </div>
 
     <button type="submit">Generate video</button>
   </form>
