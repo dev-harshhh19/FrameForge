@@ -1,0 +1,40 @@
+{
+  "name": "BMW M5 CS",
+  "description": "The BMW M5 CS is a high-performance luxury sedan engineered to deliver supercar-level performance with everyday practicality. It combines aggressive M design, extreme power, precision handling, and advanced technology in one iconic package.",
+  "introduction": "Meet the BMW M5 CS, the most powerful production M5 of its generation, built for drivers who demand uncompromising performance without giving up luxury.",
+  "specifications": {
+    "engine": "4.4-liter BMW M TwinPower Turbo V8",
+    "power": "635 hp",
+    "torque": "750 Nm",
+    "transmission": "8-speed M Steptronic automatic",
+    "drivetrain": "M xDrive all-wheel drive with 2WD mode",
+    "0_to_100_kmh": "3.0 seconds",
+    "top_speed": "305 km/h",
+    "seating": "4 seats",
+    "body_style": "High-performance sports sedan"
+  },
+  "features": [
+    "4.4-liter twin-turbocharged V8 delivering 635 hp",
+    "M xDrive intelligent all-wheel-drive system with selectable 2WD mode",
+    "M-specific adaptive suspension tuned for high-performance driving",
+    "Carbon-fiber reinforced components for reduced weight",
+    "M Carbon ceramic brakes for exceptional stopping power",
+    "Aggressive M-specific exterior design with carbon-fiber details",
+    "M Carbon bucket seats with illuminated M5 CS logos",
+    "BMW Live Cockpit Professional with advanced digital displays",
+    "Premium interior combining Alcantara, leather, and carbon-fiber trim",
+    "Launch Control and advanced M performance driving modes"
+  ],
+  "design": {
+    "exterior": "Aggressive, aerodynamic, and unmistakably BMW M, featuring carbon-fiber elements, distinctive kidney grilles, quad exhausts, and performance-focused detailing.",
+    "interior": "A driver-focused cabin combining luxury materials with lightweight M Carbon seats, Alcantara surfaces, carbon-fiber trim, and signature M accents."
+  },
+  "performance": "With 635 hp, 750 Nm of torque, and a 0-100 km/h time of just 3.0 seconds, the M5 CS delivers breathtaking acceleration while retaining the comfort and practicality of a luxury sedan.",
+  "target_audience": "Performance enthusiasts, BMW M fans, luxury car enthusiasts, and drivers seeking an uncompromising blend of everyday usability and track-inspired performance.",
+  "call_to_action": "Experience the BMW M5 CS: where luxury meets M performance.",
+  "brand_color": "#1C69D4",
+  "accent_color": "#E7222E",
+  "secondary_color": "#000000",
+  "tone": "aggressive, premium, energetic",
+  "voice": "confident, performance-driven, sophisticated"
+}

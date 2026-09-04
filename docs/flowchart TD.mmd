@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph INPUT["1. INPUT"]
+        A1[Web form /\nCLI JSON /\nProduct data]
+        A2[Logo + product images]
+    end
+
+    subgraph QUEUE["2. QUEUE (unbounded)"]
+        B1[(jobs/*.json\nstatus store)]
+        B2[InProcessQueue\nqueue.Queue - no max size]
+        B3[Worker pool\nN threads/processes]
+    end
+
+    subgraph PROCESSING["3. PROCESSING - per job"]
+        C1["ScriptGenerator\nproduct -> list[Scene]\n(1 intro + 1/feature + audience + CTA)"]
+        C2[TTSPipeline\ncloud provider -> flite fallback\nper-scene voiceover .wav]
+        C3[SceneRenderer\nPillow -> on-brand 1920x1080 PNG]
+        C4[VideoRenderPipeline\ncloud provider -> ffmpeg zoompan fallback\nper-scene silent .mp4 timed to VO]
+        C5[Assembler\nmux audio, chapter + concat -c copy,\noptional music bed, .srt captions]
+    end
+
+    subgraph OUTPUT["4. OUTPUT"]
+        D1[outputs/&lt;slug&gt;_&lt;job&gt;.mp4]
+        D2[outputs/&lt;slug&gt;_&lt;job&gt;.srt]
+    end
+
+    subgraph DELIVERY["5. NOTIFICATION / DELIVERY"]
+        E1[jobs/&lt;job&gt;.json\nstatus=completed]
+        E2[Webhook POST\nif notify_webhook set]
+        E3[Web dashboard\n/status/&lt;job&gt; polls + shows video]
+    end
+
+    A1 --> B1
+    A2 --> C3
+    B1 --> B2 --> B3
+    B3 --> C1 --> C2 --> C3 --> C4 --> C5
+    C5 --> D1
+    C5 --> D2
+    D1 --> E1
+    D2 --> E1
+    E1 --> E2
+    E1 --> E3

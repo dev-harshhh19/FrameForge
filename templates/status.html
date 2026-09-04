@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Job status</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; }
+    .bar { background: #eee; border-radius: 4px; height: 14px; overflow: hidden; margin: 14px 0; }
+    .fill { background: #2563EB; height: 100%; width: 0%; transition: width .4s; }
+    pre { background: #f5f5f8; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 13px; }
+    video { width: 100%; border-radius: 4px; margin-top: 16px; }
+    .nav { margin-top: 20px; font-size: 14px; }
+    #statusLine { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1> Generating your video</h1>
+  <p>Job ID: <code>{{ job_id }}</code></p>
+  <div id="statusLine">Checking status…</div>
+  <div class="bar"><div class="fill" id="fill"></div></div>
+  <div id="result"></div>
+  <details><summary>Raw job status</summary><pre id="raw"></pre></details>
+  <div class="nav"><a href="/">← Submit another</a> · <a href="/dashboard">All videos</a></div>
+
+  <script>
+    const jobId = {{ job_id | tojson }};
+    async function poll() {
+      const r = await fetch(`/api/status/${jobId}`);
+      const data = await r.json();
+      document.getElementById('raw').textContent = JSON.stringify(data, null, 2);
+      const status = data.status || 'unknown';
+      document.getElementById('statusLine').textContent = 'Status: ' + status +
+        (data.scenes_done ? ` (${data.scenes_done}/${data.total_scenes} scenes)` : '');
+      let pct = {queued: 5, scripting: 10, rendering_scenes: 20, assembling: 80,
+                 delivering: 95, completed: 100, failed: 100}[status] || 10;
+      if (status === 'rendering_scenes' && data.total_scenes) {
+        pct = 20 + Math.round(60 * (data.scenes_done || 0) / data.total_scenes);
+      }
+      document.getElementById('fill').style.width = pct + '%';
+
+      if (status === 'completed') {
+        const url = '/outputs/' + data.video_path.split('/').pop();
+        document.getElementById('result').innerHTML =
+          `<video controls src="${url}"></video><p><a href="${url}" download>Download MP4</a></p>`;
+        return;
+      }
+      if (status === 'failed') {
+        document.getElementById('result').innerHTML = `<p style="color:#a3121a">Failed: ${data.error || 'unknown error'}</p>`;
+        return;
+      }
+      setTimeout(poll, 1500);
+    }
+    poll();
+  </script>
+<div style="margin-top:40px; font-size:12px; color:#666;"><a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms &amp; Conditions</a></div>
+</body>
+</html>

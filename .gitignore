@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+work/
+outputs/
+jobs/
+logs/
+assets/uploads/*
+!assets/uploads/.gitkeep
+.DS_Store
+.env
+*.mkv
+*.mp4
+*.srt
+*.wav
+*.png

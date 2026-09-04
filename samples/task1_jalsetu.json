@@ -1,0 +1,17 @@
+{
+  "name": "JalSetu",
+  "description": "JalSetu is a hybrid IoT and community water safety network designed to prevent contamination and protect public health.",
+  "features": [
+    "Community issue reporting with GPS and verified photo evidence",
+    "Hybrid IoT drift correction via Huber-Kalman sensor calibration",
+    "Real-time multi-responder geo-coordination across field teams",
+    "Explainable AI triage scoring prioritizing high-risk water points",
+    "Offline-first field operations with auto-sync on reconnection",
+    "Intelligent auto-resolve distinguishing verified fixes from silent sensors"
+  ],
+  "target_audience": "municipal water utilities, environmental departments, and community responders",
+  "call_to_action": "Deploy JalSetu to secure your municipal water infrastructure today.",
+  "brand_color": "#0284c7",
+  "tone": "professional",
+  "voice": "slt"
+}

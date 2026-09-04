@@ -1,0 +1,15 @@
+{
+  "name": "Nimbus Notes",
+  "description": "Nimbus Notes is a note-taking app that turns messy meeting chatter into organized, shareable action items automatically.",
+  "features": [
+    "Real-time sync across every device, even offline",
+    "AI meeting summaries with automatic action items",
+    "End-to-end encryption on every note, always",
+    "One-click share links with granular permissions"
+  ],
+  "target_audience": "remote-first product and engineering teams",
+  "call_to_action": "Start your free 14-day trial today.",
+  "brand_color": "#5B4CFF",
+  "tone": "energetic",
+  "voice": "slt"
+}

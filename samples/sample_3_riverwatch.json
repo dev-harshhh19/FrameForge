@@ -1,0 +1,17 @@
+{
+  "name": "RiverWatch",
+  "description": "RiverWatch is a community science project that turns everyday phone photos of local rivers into a live map of water health across the county.",
+  "features": [
+    "Snap a photo of your local river and get instant water-clarity scoring",
+    "Crowd-sourced data feeds a live public health map",
+    "Weekly digest emails show trends near you",
+    "Partnered with three university hydrology labs for validation",
+    "Open API so schools can build their own classroom projects",
+    "Volunteer leaderboard to keep local chapters motivated"
+  ],
+  "target_audience": "local volunteers, schools, and county environmental offices",
+  "call_to_action": "Download the app and log your first reading this weekend.",
+  "brand_color": "#1F8A70",
+  "tone": "professional",
+  "voice": "awb"
+}
