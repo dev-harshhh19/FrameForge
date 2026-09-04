@@ -109,6 +109,7 @@ class GeminiTTSProvider(TTSProvider):
             model="gemini-2.5-flash-preview-tts",
             contents=text,
             config=types.GenerateContentConfig(
+                system_instruction="You are a professional voice actor. Speak the following text naturally, conversationally, and with genuine understanding. Do not sound like you are just reading a script.",
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(
                     voice_config=types.VoiceConfig(
@@ -146,6 +147,87 @@ class GeminiTTSProvider(TTSProvider):
 
 # Keep the old name as an alias so existing imports don't break
 CloudTTSProviderStub = GeminiTTSProvider
+
+
+class ElevenLabsTTSProvider(TTSProvider):
+    """
+    Cloud TTS via ElevenLabs.
+    Uses ELEVENLABS_API_KEY from .env.
+    """
+
+    name = "elevenlabs-cloud"
+
+    # Map Gemini names (or other generic names) to default ElevenLabs Voice IDs
+    VOICE_MAPPING = {
+        "Kore": "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "Puck": "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "Charon": "cjVigY5qzO86Huf0OWal", # Eric
+        "Fenrir": "pNInz6obpgDQGcFmaJgB", # Adam
+        "Aoede": "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "Leda": "EXAVITQu4vr4xnSDxMaL",   # Bella
+        "Orus": "VR6AewLTigWG4xSOukaG",   # Antoni
+        "Zephyr": "ErXwobaYiN019PkySvjV", # Antoni
+    }
+
+    def __init__(self, api_key: Optional[str] = None):
+        import os
+        self.api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
+
+    def synthesize(self, text: str, out_path: Path, voice: str = "Kore") -> TTSResult:
+        if not self.api_key:
+            raise TTSError("ELEVENLABS_API_KEY not set - cannot use ElevenLabs TTS")
+
+        try:
+            import requests
+        except ImportError:
+            raise TTSError("requests package not installed. Run: pip install requests")
+
+        voice_id = self.VOICE_MAPPING.get(voice, "21m00Tcm4TlvDq8ikWAM")  # Default to Rachel
+
+        print(f"[Cloud TTS] Calling ElevenLabs TTS (voice_id={voice_id})...")
+
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": self.api_key
+        }
+        data = {
+            "text": text,
+            "model_id": "eleven_monolingual_v1",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.5
+            }
+        }
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            response.raise_for_status()
+        except Exception as e:
+            # You can inspect response.text for ElevenLabs detailed error here
+            err_msg = getattr(response, "text", str(e))
+            raise TTSError(f"ElevenLabs API request failed: {err_msg}")
+
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        # ElevenLabs returns MP3 format; we need to convert to WAV
+        mp3_path = out_path.with_suffix(".mp3")
+        mp3_path.write_bytes(response.content)
+
+        cmd = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-i", str(mp3_path),
+            str(out_path),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        mp3_path.unlink(missing_ok=True)
+
+        if proc.returncode != 0 or not out_path.exists():
+            raise TTSError(f"ffmpeg MP3->WAV conversion failed: {proc.stderr[:400]}")
+
+        duration = _probe_duration(out_path)
+        print(f"[Cloud TTS] Success. Duration: {duration:.1f}s")
+        return TTSResult(audio_path=out_path, duration_sec=duration)
 
 
 

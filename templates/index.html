@@ -48,7 +48,12 @@
 
   <form action="/submit" method="post" enctype="multipart/form-data">
     <div id="form_json" style="display: none; margin-top: 16px;">
-      <label>Raw JSON</label>
+      <label>Rendering Engine</label>
+      <select name="mode_json">
+        <option value="local">Local (Offline)</option>
+        <option value="cloud">Cloud (Gemini Omni Flash)</option>
+      </select>
+      <label style="margin-top: 16px;">Raw JSON</label>
       <textarea name="raw_json" placeholder='{"name": "App", "description": "..."}' style="min-height: 200px; font-family: monospace;"></textarea>
     </div>
 
@@ -83,7 +88,7 @@
         </div>
         <div>
           <label>Voice</label>
-          <select name="voice">
+          <select name="voice" id="voice_select">
             <option value="slt">slt (US female)</option>
             <option value="rms">rms (US male)</option>
             <option value="awb">awb (Scottish male)</option>
@@ -95,12 +100,43 @@
       <div class="row">
         <div>
           <label>Rendering Engine</label>
-          <select name="mode">
+          <select name="mode" id="mode_select" onchange="updateVoiceOptions()">
             <option value="local">Local (Offline)</option>
             <option value="cloud">Cloud (Gemini Omni Flash)</option>
           </select>
         </div>
       </div>
+
+      <script>
+        function updateVoiceOptions() {
+          const mode = document.getElementById('mode_select').value;
+          const voice = document.getElementById('voice_select');
+          const localVoices = [
+            {v: 'slt', t: 'slt (US female)'},
+            {v: 'rms', t: 'rms (US male)'},
+            {v: 'awb', t: 'awb (Scottish male)'},
+            {v: 'kal', t: 'kal (US male, classic)'},
+          ];
+          const cloudVoices = [
+            {v: 'Kore', t: 'Kore (Female, warm)'},
+            {v: 'Puck', t: 'Puck (Male, energetic)'},
+            {v: 'Charon', t: 'Charon (Male, deep)'},
+            {v: 'Fenrir', t: 'Fenrir (Male, authoritative)'},
+            {v: 'Aoede', t: 'Aoede (Female, bright)'},
+            {v: 'Leda', t: 'Leda (Female, gentle)'},
+            {v: 'Orus', t: 'Orus (Male, neutral)'},
+            {v: 'Zephyr', t: 'Zephyr (Gender-neutral)'},
+          ];
+          const opts = mode === 'cloud' ? cloudVoices : localVoices;
+          voice.innerHTML = '';
+          opts.forEach(function(o) {
+            const el = document.createElement('option');
+            el.value = o.v;
+            el.textContent = o.t;
+            voice.appendChild(el);
+          });
+        }
+      </script>
 
       <label>Logo (optional)</label>
       <input type="file" name="logo" accept="image/*">

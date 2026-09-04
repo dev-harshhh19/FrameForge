@@ -12,7 +12,7 @@ from typing import Optional
 
 from core.models import ProductInput
 from core.script_generator import TemplateScriptGenerator
-from core.tts_providers import TTSPipeline, CloudTTSProviderStub, FliteLocalTTSProvider
+from core.tts_providers import TTSPipeline, CloudTTSProviderStub, FliteLocalTTSProvider, ElevenLabsTTSProvider
 from core.video_providers import VideoRenderPipeline
 from core.scene_renderer import render_scene_image, render_scene_image_cloud
 from core.assembler import (
@@ -58,15 +58,41 @@ def generate_video(product: ProductInput, with_music: bool = True) -> dict:
 
     try:
         _update_status(job_id, status="scripting", product=product.to_dict())
+        print(f"[Pipeline] mode={product.mode}, voice={product.voice}")
 
         scenes = TemplateScriptGenerator().generate(product)
         
         # Select TTS providers based on mode
+        # Cloud mode: TTS stays cloud-only (no local fallback for voice quality)
+        # Image gen already has its own local Pillow fallback in render_scene_image_cloud()
         if product.mode == "cloud":
-            providers = [CloudTTSProviderStub(), FliteLocalTTSProvider()]
+            import os
+            providers = []
+            
+            # 1. Collect all GOOGLE_API_KEY* env vars
+            google_keys = []
+            if os.environ.get("GOOGLE_API_KEY"):
+                google_keys.append(os.environ.get("GOOGLE_API_KEY"))
+            for k, v in os.environ.items():
+                if k.startswith("GOOGLE_API_KEY_") and v and v not in google_keys:
+                    google_keys.append(v)
+            
+            # Add a Gemini provider for each Google key
+            for key in google_keys:
+                providers.append(CloudTTSProviderStub(api_key=key))
+                
+            # 2. Add ElevenLabs fallback if key exists
+            if os.environ.get("ELEVENLABS_API_KEY"):
+                providers.append(ElevenLabsTTSProvider(api_key=os.environ.get("ELEVENLABS_API_KEY")))
+                
+            # 3. Fallback to a stub if no keys were found to throw a proper error
+            if not providers:
+                providers = [CloudTTSProviderStub()]
+            
+            tts = TTSPipeline(providers=providers, max_retries=0)
         else:
             providers = [FliteLocalTTSProvider()]
-        tts = TTSPipeline(providers=providers)
+            tts = TTSPipeline(providers=providers)
         
         video_provider = VideoRenderPipeline()
 
@@ -85,19 +111,11 @@ def generate_video(product: ProductInput, with_music: bool = True) -> dict:
             if scene.kind == "intro" and product.image_paths:
                 product_image = product.image_paths[0]
             
-            if product.mode == "cloud":
-                render_scene_image_cloud(
-                    heading=scene.heading, body=scene.body, kind=scene.kind,
-                    out_path=image_path, brand_color=product.brand_color,
-                    logo_path=product.logo_path, product_image_path=product_image,
-                    product_name=product.name,
-                )
-            else:
-                render_scene_image(
-                    heading=scene.heading, body=scene.body, kind=scene.kind,
-                    out_path=image_path, brand_color=product.brand_color,
-                    logo_path=product.logo_path, product_image_path=product_image,
-                )
+            render_scene_image(
+                heading=scene.heading, body=scene.body, kind=scene.kind,
+                out_path=image_path, brand_color=product.brand_color,
+                logo_path=product.logo_path, product_image_path=product_image,
+            )
             scene.image_path = str(image_path)
 
             # 3) silent video clip timed to the voiceover, then mux audio in

@@ -6,5 +6,5 @@ google-genai>=1.0
 # No video/TTS SDKs are hard-required: the default provider chain runs 100%
 # locally via ffmpeg. If you wire up a cloud provider (see core/tts_providers.py
 # and core/video_providers.py), add its SDK here too, e.g.:
-#   requests>=2.31        # generic HTTP calls to a cloud API
+requests>=2.31        # generic HTTP calls to a cloud API
 #   boto3>=1.34            # if using Amazon Polly for TTS
