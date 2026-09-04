@@ -14,7 +14,7 @@ from core.models import ProductInput
 from core.script_generator import TemplateScriptGenerator
 from core.tts_providers import TTSPipeline, CloudTTSProviderStub, FliteLocalTTSProvider
 from core.video_providers import VideoRenderPipeline
-from core.scene_renderer import render_scene_image
+from core.scene_renderer import render_scene_image, render_scene_image_cloud
 from core.assembler import (
     mux_clip_with_audio, concat_in_chapters, add_background_music_bed,
     write_srt,
@@ -84,11 +84,20 @@ def generate_video(product: ProductInput, with_music: bool = True) -> dict:
             product_image = None
             if scene.kind == "intro" and product.image_paths:
                 product_image = product.image_paths[0]
-            render_scene_image(
-                heading=scene.heading, body=scene.body, kind=scene.kind,
-                out_path=image_path, brand_color=product.brand_color,
-                logo_path=product.logo_path, product_image_path=product_image,
-            )
+            
+            if product.mode == "cloud":
+                render_scene_image_cloud(
+                    heading=scene.heading, body=scene.body, kind=scene.kind,
+                    out_path=image_path, brand_color=product.brand_color,
+                    logo_path=product.logo_path, product_image_path=product_image,
+                    product_name=product.name,
+                )
+            else:
+                render_scene_image(
+                    heading=scene.heading, body=scene.body, kind=scene.kind,
+                    out_path=image_path, brand_color=product.brand_color,
+                    logo_path=product.logo_path, product_image_path=product_image,
+                )
             scene.image_path = str(image_path)
 
             # 3) silent video clip timed to the voiceover, then mux audio in

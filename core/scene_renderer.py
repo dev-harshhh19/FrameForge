@@ -151,3 +151,74 @@ def render_scene_image(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out_path, quality=95)
     return out_path
+
+
+def render_scene_image_cloud(
+    heading: str,
+    body: str,
+    kind: str,
+    out_path: Path,
+    brand_color: str = "#1D4ED8",
+    kicker: Optional[str] = None,
+    logo_path: Optional[str] = None,
+    product_image_path: Optional[str] = None,
+    product_name: str = "",
+) -> Path:
+    """Generate a scene image using Gemini Imagen, with local Pillow fallback."""
+    import os
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        print("[Cloud Visual] No GOOGLE_API_KEY, falling back to local renderer.")
+        return render_scene_image(
+            heading=heading, body=body, kind=kind, out_path=out_path,
+            brand_color=brand_color, kicker=kicker, logo_path=logo_path,
+            product_image_path=product_image_path,
+        )
+
+    try:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=api_key)
+
+        scene_desc = {
+            "intro": f"a cinematic wide-angle product shot of {product_name}",
+            "feature": f"a detailed close-up highlighting: {heading}",
+            "audience": f"a lifestyle scene showing the target audience using {product_name}",
+            "cta": f"a bold call-to-action scene for {product_name} with dramatic lighting",
+        }
+        base_prompt = scene_desc.get(kind, f"a professional marketing scene for {product_name}")
+        prompt = (
+            f"Create a photorealistic 1920x1080 marketing image. "
+            f"{base_prompt}. "
+            f"Text overlay: \"{heading}\". "
+            f"Brand color: {brand_color}. "
+            f"Style: cinematic, high production value, no watermarks."
+        )
+
+        print(f"[Cloud Visual] Generating image for scene: {kind}...")
+        response = client.models.generate_images(
+            model="imagen-3.0-generate-002",
+            prompt=prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images=1,
+                aspect_ratio="16:9",
+            ),
+        )
+
+        if response.generated_images and len(response.generated_images) > 0:
+            img_bytes = response.generated_images[0].image.image_bytes
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_bytes(img_bytes)
+            print(f"[Cloud Visual] Success for {kind} scene.")
+            return out_path
+
+        raise Exception("No image returned from Gemini Imagen")
+
+    except Exception as e:
+        print(f"[Cloud Visual] Gemini image generation failed ({e}), using local renderer.")
+        return render_scene_image(
+            heading=heading, body=body, kind=kind, out_path=out_path,
+            brand_color=brand_color, kicker=kicker, logo_path=logo_path,
+            product_image_path=product_image_path,
+        )

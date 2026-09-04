@@ -73,27 +73,79 @@ class FliteLocalTTSProvider(TTSProvider):
         return TTSResult(audio_path=out_path, duration_sec=_probe_duration(out_path))
 
 
-class CloudTTSProviderStub(TTSProvider):
+class GeminiTTSProvider(TTSProvider):
     """
-    Placeholder for Gemini Omni Flash TTS.
+    Cloud TTS via Gemini 2.5 Flash Preview TTS.
+    Uses GOOGLE_API_KEY from .env. Falls back gracefully on failure.
     """
 
-    name = "gemini-omni-flash"
+    name = "gemini-cloud"
+
+    # Valid Gemini TTS prebuilt voice names
+    GEMINI_VOICES = {"Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"}
 
     def __init__(self, api_key: Optional[str] = None):
         import os
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
 
-    def synthesize(self, text: str, out_path: Path, voice: str = "default") -> TTSResult:
+    def synthesize(self, text: str, out_path: Path, voice: str = "Kore") -> TTSResult:
         if not self.api_key:
-            print("[Cloud TTS] GEMINI_API_KEY not found. Simulating cloud generation for demo...")
-        else:
-            print("[Cloud TTS] Using Gemini Omni Flash via API key.")
-        
-        # In a real app we'd call Gemini Omni Flash here. 
-        # For this stub, we throw TTSError so the fallback chain engages
-        # and falls back to local flite to actually generate the audio.
-        raise TTSError("Gemini Omni Flash cloud generation simulated - falling back to local for audio rendering")
+            raise TTSError("GOOGLE_API_KEY not set - cannot use cloud TTS")
+
+        # Map unknown voice strings to a valid Gemini voice
+        if voice not in self.GEMINI_VOICES:
+            voice = "Kore"
+
+        try:
+            from google import genai
+            from google.genai import types
+        except ImportError:
+            raise TTSError("google-genai package not installed. Run: pip install google-genai")
+
+        print(f"[Cloud TTS] Calling Gemini TTS (voice={voice})...")
+
+        client = genai.Client(api_key=self.api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-preview-tts",
+            contents=text,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                            voice_name=voice,
+                        )
+                    )
+                ),
+            ),
+        )
+
+        audio_data = response.candidates[0].content.parts[0].inline_data.data
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Gemini returns raw PCM; write to a temp file then convert to WAV
+        raw_path = out_path.with_suffix(".raw")
+        raw_path.write_bytes(audio_data)
+
+        cmd = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-f", "s16le", "-ar", "24000", "-ac", "1",
+            "-i", str(raw_path),
+            str(out_path),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        raw_path.unlink(missing_ok=True)
+
+        if proc.returncode != 0 or not out_path.exists():
+            raise TTSError(f"ffmpeg PCM->WAV conversion failed: {proc.stderr[:400]}")
+
+        duration = _probe_duration(out_path)
+        print(f"[Cloud TTS] Success. Duration: {duration:.1f}s")
+        return TTSResult(audio_path=out_path, duration_sec=duration)
+
+
+# Keep the old name as an alias so existing imports don't break
+CloudTTSProviderStub = GeminiTTSProvider
 
 
 

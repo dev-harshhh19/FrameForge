@@ -1,5 +1,7 @@
 Flask>=3.0
 Pillow>=10.0
+python-dotenv>=1.0
+google-genai>=1.0
 # ffmpeg (with --enable-libflite) must be available on PATH - see README "Setup".
 # No video/TTS SDKs are hard-required: the default provider chain runs 100%
 # locally via ffmpeg. If you wire up a cloud provider (see core/tts_providers.py

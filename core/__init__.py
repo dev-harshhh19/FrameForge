@@ -1,7 +1,14 @@
-﻿"""Core package initialization and system binary discovery."""
+"""Core package initialization and system binary discovery."""
 import os
 import sys
 from pathlib import Path
+
+# Load .env file so API keys are available in os.environ
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed; keys must be set manually
 
 if sys.platform == "win32":
     local_app_data = os.environ.get("LOCALAPPDATA", "")
