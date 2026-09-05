@@ -8,6 +8,8 @@ Run:  python app.py   then open http://localhost:5000
 from __future__ import annotations
 
 import json
+import shutil
+import time
 from pathlib import Path
 
 from flask import Flask, request, render_template, redirect, url_for, send_from_directory, jsonify
@@ -101,6 +103,52 @@ def api_jobs():
         except Exception:
             continue
     return jsonify(jobs)
+
+
+_START_TIME = time.time()
+
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    """Lightweight health check for monitoring and deployment verification."""
+    uptime_seconds = round(time.time() - _START_TIME, 1)
+
+    # Count jobs by status
+    pending = 0
+    running = 0
+    completed = 0
+    failed = 0
+    for p in JOBS_DIR.glob("*.json"):
+        try:
+            data = json.loads(p.read_text())
+            s = data.get("status", "unknown")
+            if s == "queued":
+                pending += 1
+            elif s == "running":
+                running += 1
+            elif s == "done":
+                completed += 1
+            elif s == "error":
+                failed += 1
+        except Exception:
+            continue
+
+    # Disk usage for outputs directory
+    disk = shutil.disk_usage(OUTPUT_DIR)
+    disk_free_gb = round(disk.free / (1024 ** 3), 2)
+
+    return jsonify({
+        "status": "healthy",
+        "uptime_seconds": uptime_seconds,
+        "jobs": {
+            "pending": pending,
+            "running": running,
+            "completed": completed,
+            "failed": failed,
+        },
+        "disk_free_gb": disk_free_gb,
+        "worker_alive": job_queue.worker.is_alive() if hasattr(job_queue, "worker") else None,
+    })
 
 
 @app.route("/dashboard", methods=["GET"])
