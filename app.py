@@ -110,45 +110,102 @@ _START_TIME = time.time()
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    """Lightweight health check for monitoring and deployment verification."""
-    uptime_seconds = round(time.time() - _START_TIME, 1)
+    """
+    Genuine system health probe.
+    Checks every real dependency the pipeline needs to produce a video:
+    FFmpeg binary, TTS provider import, disk writability, worker threads,
+    and actual job counts read from the jobs/ directory on disk.
+    """
+    checks = {}
+    overall = "healthy"
 
-    # Count jobs by status
-    pending = 0
-    running = 0
-    completed = 0
-    failed = 0
+    # 1. Uptime
+    uptime_sec = round(time.time() - _START_TIME, 1)
+
+    # 2. FFmpeg binary -- the assembler will fail without it
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["ffmpeg", "-version"],
+            capture_output=True, text=True, timeout=5,
+        )
+        version_line = result.stdout.split("\n")[0] if result.returncode == 0 else None
+        checks["ffmpeg"] = {
+            "ok": result.returncode == 0,
+            "version": version_line,
+        }
+    except FileNotFoundError:
+        checks["ffmpeg"] = {"ok": False, "error": "ffmpeg binary not found in PATH"}
+        overall = "degraded"
+    except Exception as e:
+        checks["ffmpeg"] = {"ok": False, "error": str(e)}
+        overall = "degraded"
+
+    # 3. TTS provider availability -- try to import and instantiate
+    try:
+        from core.tts_providers import FliteLocalTTSProvider
+        FliteLocalTTSProvider()
+        checks["tts_local"] = {"ok": True, "provider": "FliteLocalTTSProvider"}
+    except Exception as e:
+        checks["tts_local"] = {"ok": False, "error": str(e)}
+        overall = "degraded"
+
+    # 4. Disk writability -- actually try writing a temp file to outputs/
+    try:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        probe_file = OUTPUT_DIR / ".health_probe"
+        probe_file.write_text("ok")
+        probe_file.unlink()
+        disk = shutil.disk_usage(OUTPUT_DIR)
+        checks["disk"] = {
+            "ok": True,
+            "writable": True,
+            "free_gb": round(disk.free / (1024 ** 3), 2),
+            "total_gb": round(disk.total / (1024 ** 3), 2),
+        }
+    except Exception as e:
+        checks["disk"] = {"ok": False, "writable": False, "error": str(e)}
+        overall = "unhealthy"
+
+    # 5. Worker threads -- check each thread is actually alive
+    workers_alive = 0
+    workers_dead = 0
+    for t in job_queue._workers:
+        if t.is_alive():
+            workers_alive += 1
+        else:
+            workers_dead += 1
+    checks["workers"] = {
+        "ok": workers_dead == 0 and workers_alive > 0,
+        "alive": workers_alive,
+        "dead": workers_dead,
+        "queue_depth": job_queue.queue_depth(),
+    }
+    if workers_dead > 0:
+        overall = "degraded"
+    if workers_alive == 0 and job_queue._started:
+        overall = "unhealthy"
+
+    # 6. Real job counts from disk
+    counts = {"queued": 0, "scripting": 0, "rendering_scenes": 0,
+              "assembling": 0, "completed": 0, "failed": 0}
+    JOBS_DIR.mkdir(parents=True, exist_ok=True)
     for p in JOBS_DIR.glob("*.json"):
         try:
-            data = json.loads(p.read_text())
-            s = data.get("status", "unknown")
-            if s == "queued":
-                pending += 1
-            elif s == "running":
-                running += 1
-            elif s == "done":
-                completed += 1
-            elif s == "error":
-                failed += 1
+            s = json.loads(p.read_text()).get("status", "unknown")
+            if s in counts:
+                counts[s] += 1
         except Exception:
             continue
+    checks["jobs"] = counts
 
-    # Disk usage for outputs directory
-    disk = shutil.disk_usage(OUTPUT_DIR)
-    disk_free_gb = round(disk.free / (1024 ** 3), 2)
+    status_code = 200 if overall == "healthy" else 503
 
     return jsonify({
-        "status": "healthy",
-        "uptime_seconds": uptime_seconds,
-        "jobs": {
-            "pending": pending,
-            "running": running,
-            "completed": completed,
-            "failed": failed,
-        },
-        "disk_free_gb": disk_free_gb,
-        "worker_alive": job_queue.worker.is_alive() if hasattr(job_queue, "worker") else None,
-    })
+        "status": overall,
+        "uptime_seconds": uptime_sec,
+        "checks": checks,
+    }), status_code
 
 
 @app.route("/dashboard", methods=["GET"])
